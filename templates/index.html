@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finova Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="background-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div class="container">
+        <header class="glass-panel header">
+            <div class="logo">
+                <div class="status-indicator" id="status-dot"></div>
+                <h1>Finova</h1>
+            </div>
+            <div class="controls">
+                <button id="toggle-btn" class="glass-btn" onclick="toggleBot()">
+                    Loading...
+                </button>
+            </div>
+            <div class="current-price">
+                <span class="label">BTCUSDT</span>
+                <span class="value" id="current-price">$---.--</span>
+            </div>
+        </header>
+
+        <div class="metrics-grid">
+            <div class="glass-panel metric-card">
+                <h3>Total PNL</h3>
+                <div class="metric-value" id="total-pnl">$0.00</div>
+            </div>
+            <div class="glass-panel metric-card">
+                <h3>Total Trades</h3>
+                <div class="metric-value" id="total-trades">0</div>
+            </div>
+            <div class="glass-panel metric-card">
+                <h3>Bot Status</h3>
+                <div class="metric-value status-text" id="bot-status-text">Checking...</div>
+            </div>
+        </div>
+
+        <div class="glass-panel table-container">
+            <h2>Recent Activity</h2>
+            <table class="activity-table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Signal</th>
+                        <th>Price</th>
+                        <th>Outcome</th>
+                        <th>Session PNL</th>
+                    </tr>
+                </thead>
+                <tbody id="logs-body">
+                    <!-- Logs will be injected here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function fetchStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                
+                document.getElementById('current-price').innerText = `$${parseFloat(data.current_price).toFixed(2)}`;
+                document.getElementById('total-trades').innerText = data.total_trades;
+                
+                const pnlEl = document.getElementById('total-pnl');
+                const pnl = parseFloat(data.current_pnl);
+                pnlEl.innerText = `$${pnl.toFixed(2)}`;
+                
+                if (pnl > 0) pnlEl.style.color = '#4ade80';
+                else if (pnl < 0) pnlEl.style.color = '#f87171';
+                else pnlEl.style.color = '#e2e8f0';
+
+            } catch (err) {
+                console.error("Error fetching stats:", err);
+            }
+        }
+
+        async function fetchLogs() {
+            try {
+                const response = await fetch('/api/logs');
+                const logs = await response.json();
+                
+                const tbody = document.getElementById('logs-body');
+                tbody.innerHTML = '';
+                
+                logs.forEach(log => {
+                    const row = document.createElement('tr');
+                    
+                    const time = new Date(log.timestamp).toLocaleTimeString();
+                    const actionClass = log.signal_action === 'BUY' ? 'buy' : (log.signal_action === 'SELL' ? 'sell' : 'hold');
+                    
+                    row.innerHTML = `
+                        <td>${time}</td>
+                        <td><span class="badge ${actionClass}">${log.signal_action}</span></td>
+                        <td>$${parseFloat(log.close_price).toFixed(2)}</td>
+                        <td class="outcome-text">${log.outcome}</td>
+                        <td>$${parseFloat(log.pnl).toFixed(2)}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (err) {
+                console.error("Error fetching logs:", err);
+            }
+        }
+
+        async function fetchBotStatus() {
+            try {
+                const response = await fetch('/api/bot/status');
+                const data = await response.json();
+                
+                const btn = document.getElementById('toggle-btn');
+                const statusDot = document.getElementById('status-dot');
+                const statusText = document.getElementById('bot-status-text');
+                
+                if (data.running) {
+                    btn.innerText = "Stop Bot";
+                    btn.className = "glass-btn stop-btn";
+                    statusDot.className = "status-indicator live";
+                    statusText.innerText = "Running";
+                    statusText.style.color = "var(--buy-color)";
+                } else {
+                    btn.innerText = "Start Bot";
+                    btn.className = "glass-btn start-btn";
+                    statusDot.className = "status-indicator inactive";
+                    statusText.innerText = "Stopped";
+                    statusText.style.color = "var(--text-secondary)";
+                }
+            } catch (err) {
+                console.error("Error fetching bot status:", err);
+            }
+        }
+
+        async function toggleBot() {
+            const btn = document.getElementById('toggle-btn');
+            const isStarting = btn.innerText === "Start Bot";
+            btn.innerText = "Working...";
+            btn.className = "glass-btn";
+            
+            const endpoint = isStarting ? '/api/bot/start' : '/api/bot/stop';
+            
+            try {
+                await fetch(endpoint, { method: 'POST' });
+                await fetchBotStatus();
+            } catch (err) {
+                console.error("Error toggling bot:", err);
+            }
+        }
+
+        function updateAll() {
+            fetchStats();
+            fetchLogs();
+            fetchBotStatus();
+        }
+
+        // Initial fetch
+        updateAll();
+        
+        // Auto-refresh every 5 seconds
+        setInterval(updateAll, 5000);
+    </script>
+</body>
+</html>
