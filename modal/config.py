@@ -17,11 +17,12 @@ an environment variable left over from testing, pointed at the live API.
 import os
 from pathlib import Path
 
-# Auto-load .env from the same directory as this file, so users don't
+# Auto-load .env from the root directory so users don't
 # need to manually export vars on every terminal session.
 try:
     from dotenv import load_dotenv
-    load_dotenv(Path(__file__).resolve().parent / ".env")
+    root_dir = Path(__file__).resolve().parent.parent
+    load_dotenv(root_dir / ".env")
 except ImportError:
     pass  # python-dotenv not installed; rely on shell-exported vars
 
@@ -89,7 +90,8 @@ POLICY = {
     "risk_per_trade_pct": float(os.environ.get("RISK_PER_TRADE_PCT", "0.02")),
 }
 
-DB_PATH = os.environ.get("BOT_DB_PATH", "audit_log.db")
+root_dir = Path(__file__).resolve().parent.parent
+DB_PATH = os.environ.get("BOT_DB_PATH", str(root_dir / "audit_log.db"))
 
 print(
     f"[config] mode={'LIVE - REAL MONEY' if IS_LIVE else 'TESTNET (safe)'} "

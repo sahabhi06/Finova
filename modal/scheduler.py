@@ -19,8 +19,8 @@ import uuid
 
 import config
 from market_data import get_client, get_candles, get_current_price
-from strategy import generate_signal, compute_atr_stop_distance
-from risk import (check_risk, compute_stop_loss_price, compute_trailing_stop_price,
+from modal.strategy import generate_signal, compute_atr_stop_distance
+from modal.risk import (check_risk, compute_stop_loss_price, compute_trailing_stop_price,
                   compute_atr_position_size)
 from executor import place_market_order, place_stop_loss_order
 from audit import init_db, log_event

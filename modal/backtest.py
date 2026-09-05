@@ -16,7 +16,7 @@ Usage:
 
 from binance.client import Client
 from strategy import generate_signal, atr, compute_atr_stop_distance
-from risk import (compute_stop_loss_price, compute_take_profit_price,
+from modal.risk import (compute_stop_loss_price, compute_take_profit_price,
                   compute_trailing_stop_price, compute_atr_position_size)
 from market_data import get_historical_candles
 

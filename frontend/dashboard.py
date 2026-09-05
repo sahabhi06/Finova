@@ -4,7 +4,8 @@ import subprocess
 from flask import Flask, jsonify, render_template
 
 app = Flask(__name__)
-DB_PATH = os.environ.get("BOT_DB_PATH", "audit_log.db")
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_PATH = os.environ.get("BOT_DB_PATH", os.path.join(ROOT_DIR, "audit_log.db"))
 
 # Global reference to the bot process
 bot_process = None
@@ -30,8 +31,8 @@ def bot_start():
     if bot_process is None or bot_process.poll() is not None:
         # Start the scheduler
         bot_process = subprocess.Popen(
-            ["python", "scheduler.py"],
-            cwd=os.path.dirname(os.path.abspath(__file__)),
+            ["python", os.path.join("modal", "scheduler.py")],
+            cwd=ROOT_DIR,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT
         )
